@@ -21,8 +21,11 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EVENT_CATEGORIES, CATEGORY_LABELS, EVENT_STATUSES, STATUS_LABELS, type EventCategory } from '@/types/event';
-import { useRef, useState, useEffect } from 'react';
+
+//Agregado useCallback
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 interface EventFiltersFormProps {
   currentFilters: {
@@ -37,7 +40,10 @@ interface EventFiltersFormProps {
  * Formulario de filtros de eventos (Client Component).
  */
 export function EventFiltersForm({ currentFilters }: EventFiltersFormProps): React.ReactElement {
-  const formRef = useRef<HTMLFormElement>(null);
+  //const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   // Estado local para el input de búsqueda
   const [searchTerm, setSearchTerm] = useState(currentFilters.search ?? '');
@@ -48,8 +54,23 @@ export function EventFiltersForm({ currentFilters }: EventFiltersFormProps): Rea
   // Ref para evitar bucle infinito en primer render
   const isFirstRender = useRef(true);
 
-  const hasFilters =
-    currentFilters.search || currentFilters.category || currentFilters.priceMax || currentFilters.status;
+  const hasFilters = currentFilters.search || currentFilters.category || currentFilters.priceMax || currentFilters.status;
+
+
+  // Función modular para actualizar la URL sin recargar la página
+  const createQueryString = useCallback(
+    (name: string, value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if(value){
+        params.set(name, value);
+      } 
+      else{
+        params.delete(name);
+      }
+      return params.toString();
+    },
+    [searchParams]
+  );
 
   // Efecto para auto-submit cuando cambia el texto debounced
   useEffect(() => {
@@ -58,14 +79,24 @@ export function EventFiltersForm({ currentFilters }: EventFiltersFormProps): Rea
       isFirstRender.current = false;
       return;
     }
-
-    // Enviamos el formulario programáticamente
-    formRef.current?.requestSubmit();
+    router.push(`${pathname}?${createQueryString('search', debouncedSearch)}`, { scroll: false });
   }, [debouncedSearch]);
 
+
+    // Enviamos el formulario programáticamente
+    //formRef.current?.requestSubmit();
+  //}, [debouncedSearch]);
+
   // Handler para auto-submit de selects
+  //const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //  e.currentTarget.form?.requestSubmit(); // Usamos evento directo para select
+  //};
+
+
+  // Handler universal para los selectores
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    e.currentTarget.form?.requestSubmit(); // Usamos evento directo para select
+    const { name, value } = e.target;
+    router.push(`${pathname}?${createQueryString(name, value)}`);
   };
 
   // Handler para input de búsqueda (actualiza estado local)
@@ -76,7 +107,8 @@ export function EventFiltersForm({ currentFilters }: EventFiltersFormProps): Rea
   return (
     <div className="space-y-4 rounded-lg border bg-card p-4">
       {/* Formulario con method GET */}
-      <form ref={formRef} method="GET" action="/events" className="space-y-4">
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+      
         {/* Búsqueda */}
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -90,7 +122,7 @@ export function EventFiltersForm({ currentFilters }: EventFiltersFormProps): Rea
             />
           </div>
           {/* Botón de búsqueda (opcional pero bueno para accesibilidad) */}
-          <Button type="submit">Buscar</Button>
+          <Button type="button">Buscar</Button>
         </div>
 
         {/* Filtros adicionales */}
@@ -98,7 +130,7 @@ export function EventFiltersForm({ currentFilters }: EventFiltersFormProps): Rea
           {/* Categoría */}
           <select
             name="category"
-            defaultValue={currentFilters.category ?? ''}
+            value={currentFilters.category ?? ''}
             onChange={handleFilterChange}
             className="h-10 w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
@@ -113,7 +145,7 @@ export function EventFiltersForm({ currentFilters }: EventFiltersFormProps): Rea
           {/* Status */}
           <select
             name="status"
-            defaultValue={currentFilters.status ?? ''}
+            value={currentFilters.status ?? ''}
             onChange={handleFilterChange}
             className="h-10 w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
@@ -128,7 +160,7 @@ export function EventFiltersForm({ currentFilters }: EventFiltersFormProps): Rea
           {/* Precio maximo */}
           <select
             name="priceMax"
-            defaultValue={currentFilters.priceMax?.toString() ?? ''}
+            value={currentFilters.priceMax?.toString() ?? ''}
             onChange={handleFilterChange}
             className="h-10 w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >

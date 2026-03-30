@@ -313,6 +313,8 @@ export async function deleteEventAction(id: string): Promise<FormState> {
  * @param id - ID del evento
  */
 export async function registerForEventAction(id: string): Promise<FormState> {
+  //delay artificial
+  await new Promise((resolve) => setTimeout(resolve, 2200));
   const event = await registerInDb(id);
 
   if (!event) {

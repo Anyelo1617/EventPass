@@ -18,7 +18,7 @@
 
 'use client';
 
-import { useOptimistic, useTransition } from 'react';
+import { useOptimistic, useTransition, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { registerForEventAction } from '@/actions/eventActions';
 import { Loader2, CheckCircle } from 'lucide-react';
@@ -49,6 +49,8 @@ export function RegisterButton({
    * isPending indica si hay una transición en progreso.
    */
   const [isPending, startTransition] = useTransition();
+  //guardamos el mensaje que nos devuelva el servidor
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
   /**
    * useOptimistic crea un estado optimista.
@@ -69,55 +71,136 @@ export function RegisterButton({
   /**
    * Handler del registro.
    */
-  async function handleRegister(): Promise<void> {
-    // 1. Actualización optimista inmediata
-    addOptimistic('register');
 
-    // 2. Ejecutar Server Action en una transición
+  // handleRegister (Corregido con startTransition)
+  function handleRegister(): void {
+    // 0. Limpiamos mensajes previos antes de intentar de nuevo
+    setFeedback(null);
+
     startTransition(async () => {
+      // 1. Actualización optimista inmediata
+      addOptimistic('register');
+
+      // 2. Llamada al servidor (tardará 2.2s por el retraso artificial)
       const result = await registerForEventAction(eventId);
 
+      // 3. Manejo de la respuesta en la UI en lugar de solo la consola
       if (!result.success) {
-        // Si falla, podríamos mostrar un toast de error
-        // El estado optimista se revierte automáticamente
-        console.error('Error al registrar:', result.message);
+        // Si falla, el estado optimista se revierte automáticamente
+        setFeedback({ type: 'error', msg: result.message }); 
+      } 
+      else {
+        // Mostramos success
+        setFeedback({ type: 'success', msg: result.message });
       }
     });
   }
 
-  // Si ya se registró (optimísticamente)
-  if (showRegistered) {
-    return (
-      <Button variant="secondary" disabled className="w-full gap-2">
-        <CheckCircle className="h-4 w-4" />
-        ¡Registrado!
-      </Button>
-    );
-  }
+  // CÓDIGO ANTERIOR DE RETORNOS TEMPRANOS
+  // // Si ya se registró (optimísticamente)
+  // if (showRegistered) {
+  //   return (
+  //     <Button variant="secondary" disabled className="w-full gap-2">
+  //       <CheckCircle className="h-4 w-4" />
+  //       ¡Registrado!
+  //     </Button>
+  //   );
+  // }
+  //
+  // // Si no hay plazas
+  // if (!canRegister) {
+  //   return (
+  //     <Button variant="secondary" disabled className="w-full">
+  //       {optimisticSpots === 0 ? 'Evento Agotado' : 'No disponible'}
+  //     </Button>
+  //   );
+  // }
+  //
+  // return (
+  //   <Button
+  //     onClick={handleRegister}
+  //     disabled={isPending}
+  //     className={cn('w-full gap-2', isPending && 'cursor-wait')}
+  //   >
+  //     {isPending ? (
+  //       <>
+  //         <Loader2 className="h-4 w-4 animate-spin" />
+  //         Registrando...
+  //       </>
+  //     ) : (
+  //       `Registrarme (${optimisticSpots} plazas)`
+  //     )}
+  //   </Button>
+  // );
 
-  // Si no hay plazas
-  if (!canRegister) {
+  // ============================================================================
+  // NUEVO CÓDIGO: Retornos tempranos con manejo de Spinner y Feedback (DoD)
+  // ============================================================================
+  
+  // 1. ESTADO: Cargando (Spinner) 
+  // Debe ir PRIMERO para interceptar el render mientras isPending es true
+  if(isPending){
     return (
-      <Button variant="secondary" disabled className="w-full">
-        {optimisticSpots === 0 ? 'Evento Agotado' : 'No disponible'}
-      </Button>
-    );
-  }
-
-  return (
-    <Button
-      onClick={handleRegister}
-      disabled={isPending}
-      className={cn('w-full gap-2', isPending && 'cursor-wait')}
-    >
-      {isPending ? (
-        <>
+      <div className="w-full space-y-2">
+        <Button disabled className="w-full gap-2 cursor-wait">
           <Loader2 className="h-4 w-4 animate-spin" />
           Registrando...
-        </>
-      ) : (
-        `Registrarme (${optimisticSpots} plazas)`
+        </Button>
+      </div>
+    );
+  }
+
+  // 2. ESTADO: Registrado (Éxito)
+  if(showRegistered || feedback?.type === 'success'){
+    return (
+      <div className="w-full space-y-2">
+        <Button variant="secondary" disabled className="w-full gap-2">
+          <CheckCircle className="h-4 w-4" />
+          ¡Registrado!
+        </Button>
+        {/* Mostramos el mensaje de éxito del servidor */}
+        {feedback?.type === 'success' && (
+          <p className="text-xs text-center font-medium text-green-600">
+            {feedback.msg}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // 3. ESTADO: Sin plazas o agotado
+  if(!canRegister){
+    return (
+      <div className="w-full space-y-2">
+        <Button variant="secondary" disabled className="w-full">
+          {availableSpots === 0 ? 'Evento Agotado' : 'No disponible'}
+        </Button>
+        {/* Mostramos error si el servidor falló porque se llenó justo en ese momento */}
+        {feedback?.type === 'error' && (
+          <p className="text-xs text-center font-medium text-red-500">
+            {feedback.msg}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // 4. ESTADO: Normal (Botón listo para hacer clic)
+  return(
+    <div className="w-full space-y-2">
+      <Button 
+        onClick={handleRegister} 
+        disabled={isPending}
+        className="w-full gap-2 transition-all hover:scale-105"
+      >
+        Registrarme ({optimisticSpots} plazas)
+      </Button>
+      {/* Mostramos el mensaje de error si la acción del servidor falló (ej. error de red) */}
+      {feedback?.type === 'error' && (
+        <p className="text-xs text-center font-medium text-red-500">
+          {feedback.msg}
+        </p>
       )}
-    </Button>
+    </div>
   );
 }

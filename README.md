@@ -163,3 +163,6 @@ La latencia simulada generaba mala experiencia al registrar usuarios en eventos.
 
 - **Protección de Lógica de Negocio:**  
   Cuando no hay plazas disponibles, se bloquea la acción y se muestra "Evento Agotado".
+
+  Link al video explicativo:
+  https://youtu.be/2cIhbB0yrDs

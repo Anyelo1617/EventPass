@@ -1,348 +1,165 @@
-# Módulo 4 - EventPass
+# 🎟️ Módulo 4 - Event Pass
 
-## Plataforma de Gestión de Eventos con Next.js 16
+**Full-Stack App con Next.js App Router & React 19**
 
-> Aplicación fullstack con Server Components, Server Actions y React 19.
+Plataforma moderna para el descubrimiento, creación y registro de eventos. Este proyecto aprovecha al máximo los paradigmas más recientes de la web, utilizando **Server Components** para el renderizado inicial rápido y **Server Actions** para la mutación de datos sin necesidad de construir una API REST separada.
 
-**Deploy:** https://event-pass-kohl.vercel.app/
-
----
-
-### 6. UI/UX Improvements (Latest)
-
-- **Toast Notifications**: Integrated `shadcn/ui` Toast for success/error feedback on Create, Edit, and Delete actions.
-- **Debounced Search**: Filter events by title with a 500ms debounce to prevent excessive re-renders.
-- **Loading States**: Added `loading.tsx` with skeletons for a smoother data fetching experience.
-- **Relative Dates**: Events display relative dates (e.g., "In 3 days") for better context.
-- **Client-Side Redirection**: Optimized navigation flow after form submission to ensure toast visibility using `router.push` with a micro-delay.
-
-### 7. Tech Stack
-
-| Technology | Version | Usage |
-|------------|---------|-------|
-| Next.js | 16.1.1 | App Router, Server Actions |
-| React | 19.2.1 | `useActionState`, `useTransition`, `useOptimistic` |
-| Tailwind CSS | 4.1.8 | Styling (Utility-first) |
-| Lucide React | Latest | Icons |
-| Radix UI | Latest | Accessible UI Primitives (via Shadcn) |
-| Zod | Latest | Schema Validation |
-
-> Ver [TECH_STACK.md](./TECH_STACK.md) para detalles completos.
+Implementa patrones avanzados de UX como actualizaciones optimistas y estado basado en URL.
 
 ---
 
-## Descripción del Proyecto
+## 💻 Stack Tecnológico
 
-**EventPass** es una plataforma de gestión de eventos que demuestra las capacidades de Next.js 16 con App Router. Este proyecto enseña:
+A diferencia del Módulo 3, este proyecto utiliza una arquitectura monolítica moderna (Full-Stack unificado) gracias a Next.js, ejecutando el cliente y el servidor en el mismo entorno.
 
-1. **Server Components** - Renderizado en servidor por defecto
-2. **Server Actions** - Mutaciones sin API routes manuales
-3. **React 19 Hooks** - useActionState, useFormStatus, useOptimistic
-4. **App Router** - Layouts, rutas dinámicas, metadata API
+| Dependencia   | Versión | Propósito |
+|--------------|--------|----------|
+| Next.js      | 15.x   | Framework React Full-Stack (App Router) |
+| React        | 19.x   | Biblioteca UI Core (nuevos hooks como `useOptimistic`) |
+| TypeScript   | 5.x    | Tipado estático para código robusto |
+| Tailwind CSS | 4.x    | Framework de estilos utilitarios |
+| Zod          | 3.x    | Validación de esquemas en el servidor |
+| Shadcn UI    | Manual | Componentes UI accesibles |
+| Lucide React | 0.x    | Sistema de iconografía |
 
 ---
 
-## Contexto Pedagógico
+## 🧠 Conceptos Clave Implementados
 
-### 1. Server Components vs Client Components
+Este módulo marca la adopción de las últimas características de React y Next.js:
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    SERVER VS CLIENT COMPONENTS                           │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│   SERVER COMPONENTS (Por defecto)    │    CLIENT COMPONENTS              │
-│   ──────────────────────────────────────────────────────────────────    │
-│   ✅ Fetch de datos directo          │    ✅ Interactividad (onClick)    │
-│   ✅ Acceso a backend/DB             │    ✅ Hooks de React              │
-│   ✅ Menos JS al cliente             │    ✅ Browser APIs                │
-│   ✅ Mejor SEO                       │    ✅ Estado local                │
-│                                       │                                   │
-│   Ejemplo:                           │    Ejemplo:                        │
-│   async function Page() {            │    'use client'                   │
-│     const data = await fetch()       │    function Button() {            │
-│     return <div>{data}</div>         │      const [x, setX] = useState() │
-│   }                                  │    }                              │
-│                                       │                                   │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+- **React Server Components (RSC):**  
+  Componentes renderizados en el servidor (`HomePage`), permitiendo acceso directo a la base de datos sin enviar JavaScript al cliente.
 
-### 2. Server Actions
+- **Server Actions (`'use server'`):**  
+  Funciones seguras que reemplazan endpoints tradicionales, permitiendo mutaciones directas desde componentes del cliente.
 
-```typescript
-// actions/eventActions.ts
-'use server';
+- **Optimistic UI (React 19):**  
+  Uso de `useOptimistic` y `useTransition` para simular respuestas instantáneas.
 
-import { revalidatePath } from 'next/cache';
+- **Estado en URL (URL State):**  
+  Manejo de filtros mediante `searchParams`, haciendo las vistas compartibles.
 
-export async function createEvent(formData: FormData) {
-  // 1. Esta función se ejecuta en el SERVIDOR
-  // 2. Puede acceder a la base de datos directamente
-  // 3. Es segura para secrets y credenciales
+- **Mutaciones y Revalidación:**  
+  Uso de `revalidatePath` para mantener la UI sincronizada tras mutaciones.
 
-  const event = await db.event.create({
-    data: { title: formData.get('title') }
-  });
+---
 
-  // 4. Invalida la caché para mostrar datos frescos
-  revalidatePath('/events');
-}
-```
+## 🏗️ Arquitectura de la Aplicación
 
-### 3. React 19 Hooks
-
-```typescript
-// useActionState - Maneja estado de Server Actions
-const [state, formAction] = useActionState(createEventAction, initialState);
-
-// useFormStatus - Estado del formulario (pending, etc.)
-const { pending } = useFormStatus();
-
-// useOptimistic - Actualizaciones optimistas
-const [optimisticValue, addOptimistic] = useOptimistic(value, reducer);
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      ARQUITECTURA NEXT.JS (APP ROUTER)                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│    ┌─────────────────────┐         ┌─────────────────────┐                  │
+│    │    CLIENT (Browser) │         │   SERVER (Next.js)  │                  │
+│    │                     │         │                     │                  │
+│    │  ┌───────────────┐  │         │  ┌───────────────┐  │                  │
+│    │  │ UI Optimista  │  │ HTTP POST  │ Server Action │  │                  │
+│    │  │ (useOptimistic│ ├───────────►│ (eventActions) │  │                  │
+│    │  └──────┬────────┘  │         │  └───────┬───────┘  │                  │
+│    │         │           │         │          │          │                  │
+│    │         ▼           │         │          ▼          │                  │
+│    │  ┌───────────────┐  │         │  ┌───────────────┐  │                  │
+│    │  │ URL State     │◄─┼─────────┤  │ In-Memory DB  │  │                  │
+│    │  │ (?category=X) │  │  Render │  │ (events.ts)   │  │                  │
+│    │  └───────────────┘  │         │  └───────────────┘  │                  │
+│    └─────────────────────┘         └─────────────────────┘                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Estructura del Proyecto
-
-```
-module4-event-pass/
-├── package.json               # Dependencias y scripts
-├── next.config.ts             # Configuración de Next.js
-├── postcss.config.mjs         # Configuración de PostCSS (Tailwind v4)
-├── tsconfig.json              # Configuración de TypeScript
-├── eslint.config.mjs          # Configuración de ESLint
-├── .gitignore                 # Archivos ignorados
-├── .env.example               # Variables de entorno ejemplo
-├── README.md                  # Esta documentación
-├── TECH_STACK.md              # Versiones de dependencias
-└── src/
-    ├── app/                   # App Router (páginas y layouts)
-    │   ├── layout.tsx         # Layout raíz
-    │   ├── page.tsx           # Página principal
-    │   ├── loading.tsx        # UI de carga
-    │   ├── error.tsx          # UI de error
-    │   ├── not-found.tsx      # Página 404
-    │   ├── globals.css        # Estilos globales
-    │   └── events/            # Rutas de eventos
-    │       ├── page.tsx       # Lista de eventos
-    │       ├── new/           # Crear evento
-    │       │   └── page.tsx
-    │       └── [id]/          # Detalle de evento (dinámica)
-    │           └── page.tsx
-    ├── actions/               # Server Actions
-    │   └── eventActions.ts
-    ├── components/            # Componentes React
-    │   ├── ui/                # Shadcn UI components
-    │   ├── EventCard.tsx
-    │   ├── EventForm.tsx
-    │   ├── EventList.tsx
-    │   ├── RegisterButton.tsx
-    │   ├── Header.tsx
-    │   └── Footer.tsx
-    ├── data/                  # Almacén de datos en memoria
-    │   └── events.ts
-    ├── lib/                   # Utilidades
-    │   └── utils.ts
-    └── types/                 # Tipos TypeScript
-        └── event.ts
-```
-
----
-
-## Arquitectura
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         ARQUITECTURA NEXT.JS 16                          │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│   BROWSER                                                                │
-│   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │  HTML + Minimal JS (solo para Client Components)                │   │
-│   └───────────────────────────────┬─────────────────────────────────┘   │
-│                                   │                                      │
-│   ════════════════════════════════│══════════════════════════════════   │
-│                                   │                                      │
-│   SERVER                          ▼                                      │
-│   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                       APP ROUTER                                 │   │
-│   │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐   │   │
-│   │  │   Layout    │ │    Page     │ │    Server Actions       │   │   │
-│   │  │  (Server)   │ │  (Server)   │ │    createEvent()        │   │   │
-│   │  └─────────────┘ └──────┬──────┘ └───────────┬─────────────┘   │   │
-│   │                         │                     │                 │   │
-│   │                         ▼                     ▼                 │   │
-│   │  ┌─────────────────────────────────────────────────────────┐   │   │
-│   │  │                    DATA LAYER                            │   │   │
-│   │  │    getEvents()  getEventById()  createEvent()           │   │   │
-│   │  │              (In-memory / Futuro: DB)                    │   │   │
-│   │  └─────────────────────────────────────────────────────────┘   │   │
-│   └─────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Flujo de Server Actions
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      FLUJO DE SERVER ACTIONS                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│   1. FORMULARIO                                                          │
-│   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │  <form action={createEventAction}>                              │   │
-│   │    <input name="title" />                                       │   │
-│   │    <button type="submit">Crear</button>                         │   │
-│   │  </form>                                                        │   │
-│   └───────────────────────────────┬─────────────────────────────────┘   │
-│                                   │ FormData                             │
-│                                   ▼                                      │
-│   2. SERVER ACTION                                                       │
-│   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │  'use server'                                                   │   │
-│   │  async function createEventAction(formData: FormData) {        │   │
-│   │    // Validar con Zod                                          │   │
-│   │    // Guardar en DB                                            │   │
-│   │    // revalidatePath('/events')                                │   │
-│   │  }                                                              │   │
-│   └───────────────────────────────┬─────────────────────────────────┘   │
-│                                   │                                      │
-│                                   ▼                                      │
-│   3. REVALIDACIÓN                                                        │
-│   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │  Next.js regenera las páginas afectadas                        │   │
-│   │  El cliente recibe HTML actualizado                            │   │
-│   └─────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Comparación: Next.js App Router vs Pages Router
-
-| Característica      | App Router (Next.js 13+)     | Pages Router (Legacy)       |
-| ------------------- | ---------------------------- | --------------------------- |
-| Componentes         | Server Components por defecto| Client Components           |
-| Data Fetching       | async/await en componentes   | getServerSideProps, etc.    |
-| Layouts             | Anidados, persistentes       | \_app.tsx global            |
-| Mutaciones          | Server Actions               | API Routes manuales         |
-| Streaming           | Soportado nativamente        | No soportado                |
-| Metadata            | Metadata API                 | Head component              |
-
----
-
-## Configuración y Ejecución
+## 🚀 Instalación y Configuración
 
 ### Prerrequisitos
-
 - Node.js 20.19+ o 22.12+
 - npm 10+
 
-### Instalación
+> Nota: La base de datos vive en memoria (RAM). Los datos se reinician al reiniciar el servidor.
 
 ```bash
-# Navegar al directorio del módulo
-cd web/module4-event-pass
-
-# Instalar dependencias
+# 1. Instalar dependencias
 npm install
-```
 
-### Comandos Disponibles
-
-```bash
-# Servidor de desarrollo con Turbopack
+# 2. Iniciar servidor de desarrollo (puerto 3000)
 npm run dev
-
-# Verificar tipos de TypeScript
-npm run type-check
-
-# Build de producción
-npm run build
-
-# Ejecutar versión de producción
-npm start
-
-# Ejecutar linter
-npm run lint
 ```
 
 ---
 
-## Características Principales
+## 📂 Estructura del Proyecto
 
-### 1. Listado de Eventos (Server Component)
-- Renderizado en servidor
-- Filtros via query params
-- SEO optimizado
-
-### 2. Detalle de Evento (Dynamic Route)
-- Metadata dinámica para SEO
-- Registro con actualización optimista
-- notFound() para eventos inexistentes
-
-### 3. Creación de Eventos (Server Action)
-- Validación con Zod
-- useActionState para estado
-- useFormStatus para loading
-
-### 4. Registro Optimista (useOptimistic)
-- UI se actualiza inmediatamente
-- Rollback automático si falla
-
----
-
-## Notas Educativas
-
-### Progressive Enhancement
-
-Los formularios funcionan sin JavaScript:
-1. El form se envía como POST normal
-2. El servidor procesa y redirige
-3. Con JS, se mejora con estados de carga
-
-### Colocation
-
-En App Router, cada carpeta puede tener:
-- `page.tsx` - La página
-- `layout.tsx` - Layout compartido
-- `loading.tsx` - UI de carga
-- `error.tsx` - Error boundary
-- `not-found.tsx` - 404
+```text
+module4-event-pass/
+├── package.json
+├── next.config.ts
+├── postcss.config.mjs
+├── tsconfig.json
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── events/
+│   │       ├── page.tsx
+│   │       ├── new/
+│   │       └── [id]/
+│   ├── actions/
+│   │   └── eventActions.ts
+│   ├── components/
+│   │   ├── ui/
+│   │   ├── EventCard.tsx
+│   │   ├── EventFiltersForm.tsx
+│   │   └── RegisterButton.tsx
+│   ├── data/
+│   │   └── events.ts
+│   ├── lib/
+│   │   └── utils.ts
+│   └── types/
+│       └── event.ts
+└── README.md
+```
 
 ---
 
-## Experimentos Sugeridos
+## 📄 Parte 1: Event Filters con URL State
 
-1. **Paginación**: Implementa paginación con searchParams
-2. **Búsqueda en tiempo real**: Añade debounce al filtro de búsqueda
-3. **Parallel Routes**: Crea un modal con @modal
-4. **Intercepting Routes**: Implementa vista previa de eventos
-5. **Streaming**: Usa Suspense para cargar partes de la página
+### Contexto
+El usuario necesita filtrar eventos por categoría y estado, manteniendo una experiencia moderna y compartible.
 
----
+### Implementación Realizada
 
-## Conectar con Module 5
+- **Lectura de Parámetros:**  
+  Se utilizan `searchParams` en Server Components para filtrar datos directamente desde el servidor.
 
-Module 5 (EventPass Pro) extiende este proyecto añadiendo:
-- Firebase Authentication
-- Firestore como base de datos
-- Generación de descripciones con Gemini AI
+- **Mutación de URL:**  
+  Se implementó `useRouter().push()` para actualizar la URL sin recargar la página.
 
----
+- **Persistencia y UI Activa:**  
+  Los filtros leen la URL actual para reflejar el estado activo visualmente.
 
-## Licencia
-
-Este proyecto es de uso educativo y fue creado como material de aprendizaje.
+- **Estados Vacíos y Reset:**  
+  Se agregó un botón para limpiar filtros y mensajes amigables cuando no hay resultados.
 
 ---
 
-## Créditos
+## 📄 Parte 2: Optimistic Event Registration
 
-> Este proyecto ha sido generado usando Claude Code y adaptado con fines educativos por Adrián Catalán.
+### Contexto
+La latencia simulada generaba mala experiencia al registrar usuarios en eventos.
+
+### Implementación Realizada
+
+- **Feedback Instantáneo (`useOptimistic`):**  
+  La UI descuenta plazas disponibles inmediatamente al hacer clic.
+
+- **Gestión de Transiciones (`useTransition`):**  
+  El botón muestra estado de carga y desactiva interacción.
+
+- **Rollback Automático:**  
+  Si falla la operación, React revierte automáticamente el estado optimista.
+
+- **Protección de Lógica de Negocio:**  
+  Cuando no hay plazas disponibles, se bloquea la acción y se muestra "Evento Agotado".
